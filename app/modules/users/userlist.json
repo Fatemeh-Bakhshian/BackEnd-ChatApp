@@ -1,0 +1,38 @@
+[
+    {
+        "id":1,
+        "name": "Diana",
+        "roll": "manager",
+        "email": "fatemeh@gmail.com",
+        "phonenumber": "09112223344",
+        "birthdate": "2002/03/11"
+        
+    },
+    {
+        "id":2,
+        "name": "Jon",
+        "roll": "assistant",
+        "email": "Jon@gmail.com",
+        "phonenumber": "09112223377",
+        "birthdate": "2002/04/11"
+        
+    },
+    {
+        "id":3,
+        "name": "Jace",
+        "roll": "Employe",
+        "email": "Jace@gmail.com",
+        "phonenumber": "09112223355",
+        "birthdate": "2002/05/11"
+        
+    },
+    {
+        "id":4,
+        "name": "Anna",
+        "roll": "assistant",
+        "email": "Anna@gmail.com",
+        "phonenumber": "09112223366",
+        "birthdate": "2002/06/11"
+        
+    }
+]
