@@ -8,8 +8,8 @@ app.use(cors({
   origin: ["http://localhost:5173"]
 }));
 
-const users = JSON.parse(fs.readFileSync("modules/users/userlist.json"));
-const reports = JSON.parse(fs.readFileSync("modules/reports/reportlist.json"));
+const users = JSON.parse(fs.readFileSync("app/modules/users/userlist.json"));
+const reports = JSON.parse(fs.readFileSync("app/modules/reports/reportlist.json"));
 
 app.get("/api/users", (req, res) => {
 
