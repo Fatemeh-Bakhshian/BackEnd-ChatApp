@@ -1,38 +1,23 @@
-const fs = require("fs");
 const express = require("express");
 const cors = require("cors");
 
+
+const userRouter = require("./app/modules/users/user.routes");
+const reportRouter = require("./app/modules/reports/report.routes");
+
 const app = express();
-const port = 3000;
-app.use(cors({
-  origin: ["http://localhost:5173"]
-}));
 
-const users = JSON.parse(fs.readFileSync("app/modules/users/userlist.json"));
-const reports = JSON.parse(fs.readFileSync("app/modules/reports/reportlist.json"));
+app.use(express.json());
 
-app.get("/api/users", (req, res) => {
+//ایا اینو باید تو فایل config بزارم؟
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+  })
+);
 
-  res.status(200).json({
-    status: "success",
-    results: users.length,
-    data: {
-      users,
-    },
-  });
-});
+app.use("/api/users", userRouter);
+app.use("/api/reports", reportRouter);
 
-app.get("/api/reports", (req, res) => {
 
-  res.status(200).json({
-    status: "success",
-    results: reports.length,
-    data: {
-      reports,
-    },
-  });
-});
-
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+module.exports = app;
