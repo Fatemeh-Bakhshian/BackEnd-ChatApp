@@ -16,8 +16,8 @@ app.use(
   })
 );
 
-app.use("/api/users", userRouter);
-app.use("/api/reports", reportRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/reports", reportRouter);
 
 
 module.exports = app;
