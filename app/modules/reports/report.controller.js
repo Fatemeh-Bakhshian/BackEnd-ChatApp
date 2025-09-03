@@ -11,3 +11,22 @@ exports.getReport = (req, res) => {
     },
   });
 };
+
+exports.getReportById = (req, res) => {
+  const {id} = req.params;
+  const report = reports.find((report) => report.id == id);
+
+  if (!report) {
+    res.status(404).json({
+      status: "fail",
+      message: "Report not found",
+    });
+  } else {
+    res.status(200).json({
+      status: "success",
+      data: {
+        report,
+      },
+    });
+  }
+};
