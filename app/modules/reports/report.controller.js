@@ -1,32 +1,38 @@
-const fs = require("fs");
+const Report = require("./report.model");
 
-const reports = JSON.parse(fs.readFileSync(`${__dirname}/reportlist.json`));
+exports.getReport = async (req, res) => {
+  try {
+    const reports = await Report.find();
 
-exports.getReport = (req, res) => {
-  res.status(200).json({
-    status: "success",
-    results: reports.length,
-    data: {
-      reports,
-    },
-  });
+    res.status(200).json({
+      status: "success",
+      results: reports.length,
+      data: {
+        reports,
+      },
+    });
+  } catch (err) {
+    res.status(404).json({
+      status: "failed",
+      message: err,
+    });
+  }
 };
 
-exports.getReportById = (req, res) => {
-  const {id} = req.params;
-  const report = reports.find((report) => report.id == id);
+exports.getReportById = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
 
-  if (!report) {
-    res.status(404).json({
-      status: "fail",
-      message: "Report not found",
-    });
-  } else {
     res.status(200).json({
       status: "success",
       data: {
         report,
       },
+    });
+  } catch (err) {
+    res.status(404).json({
+      status: "failed",
+      message: err,
     });
   }
 };
