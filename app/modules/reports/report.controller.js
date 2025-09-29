@@ -1,8 +1,23 @@
+const APIFeatures = require("../../utils/apiFeatures");
 const Report = require("./report.model");
+
+exports.aliasTopReports = (req, res, next) => {
+  req.query.limit = "2";
+  req.query.sort = "-date,like";
+  req.query.fields = "name,like,date";
+  console.log("0 => ", req.query);
+  next();
+};
 
 exports.getReport = async (req, res) => {
   try {
-    const reports = await Report.find();
+    const features = new APIFeatures(Report.find(), req.query)
+      .filter()
+      .sort()
+      .limit()
+      .paginat();
+
+    const reports = await features.query;
 
     res.status(200).json({
       status: "success",
