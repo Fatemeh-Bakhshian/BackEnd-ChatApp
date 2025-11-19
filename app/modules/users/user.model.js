@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
@@ -8,9 +9,12 @@ const userSchema = new mongoose.Schema({
     required: [true, "please provaide your name"],
     trim: true,
   },
-  roll: {
+  role: {
     type: String,
+    required: [true, "a user must have a role"],
+    enum: ["assistant", "admin", "manager", "employee"],
     trim: true,
+    default: "assistant",
   },
   email: {
     type: String,
@@ -45,7 +49,11 @@ const userSchema = new mongoose.Schema({
     select: false,
   },
   passwordChangedAt: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
 });
+
+// pre save middleware:
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
@@ -56,13 +64,21 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password") || this.isNew) return next();
+
+  return (this.passwordChangedAt = Date.now - 1000);
+  next();
+});
+
+// INSTANTS METODS:
+
 userSchema.methods.CorrectPassword = async function (
   candidatePassword,
   userPassword
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
-
 
 userSchema.methods.changedPasswordAfter = async function (JWTTimeStamp) {
   if (this.passwordChangedAt) {
@@ -76,6 +92,22 @@ userSchema.methods.changedPasswordAfter = async function (JWTTimeStamp) {
 
   // fals means not changed
   return false;
+};
+
+userSchema.methods.ceartePasswordResetToken = function () {
+  const resetToken = crypto.randomBytes(32).toString("hex");
+  // console.log("MY RESET TOKEN", resetToken);
+
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // console.log("MY HASHED RESET TOKEN", this.passwordResetToken);
+
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+  return resetToken;
 };
 
 const User = mongoose.model("User", userSchema);

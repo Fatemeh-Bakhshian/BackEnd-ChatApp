@@ -13,7 +13,9 @@ router
   .route("/top-2-new")
   .get(reportController.aliasTopReports, reportController.getReport);
 
-router.route("/:id").get(authController.Protect , reportController.getReportById);
+router
+  .route("/:id")
+  .get(authController.Protect, reportController.getReportById);
 
 //router
 //   .route("/:id")

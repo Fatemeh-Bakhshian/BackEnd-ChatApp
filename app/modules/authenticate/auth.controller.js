@@ -1,29 +1,25 @@
+const crypto = require("crypto");
+
 const { promisify } = require("util");
 const User = require("../users/user.model");
 const jwt = require("jsonwebtoken");
+const sendEmail = require("../../utils/email");
 
 const SignToken = (id) => {
   return jwt.sign({ id: id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIERS_IN,
   });
 };
+const CreateSendToken = (user, statusCode, res) => {
+  const token = SignToken(user._id);
+  console.log("check my TOKEN = ", token);
 
-exports.signIn = async (req, res, next) => {
-  const newuser = await User.create({
-    name: req.body.name,
-    email: req.body.email,
-    phonenumber: req.body.phonenumber,
-    password: req.body.password,
-    passwordConfrim: req.body.passwordConfrim,
-  });
-
-  const token = SignToken(newuser._id);
   try {
-    res.status(201).json({
+    res.status(statusCode).json({
       status: "success",
       token,
       data: {
-        user: newuser,
+        user,
       },
     });
   } catch (err) {
@@ -32,6 +28,35 @@ exports.signIn = async (req, res, next) => {
       message: err,
     });
   }
+};
+
+exports.signIn = async (req, res, next) => {
+  const newuser = await User.create({
+    name: req.body.name,
+    email: req.body.email,
+    // role: req.body.role,
+    phonenumber: req.body.phonenumber,
+    password: req.body.password,
+    passwordConfrim: req.body.passwordConfrim,
+  });
+
+  CreateSendToken(newuser, 201, res);
+
+  // const token = SignToken(newuser._id);
+  // try {
+  //   res.status(201).json({
+  //     status: "success",
+  //     token,
+  //     data: {
+  //       user: newuser,
+  //     },
+  //   });
+  // } catch (err) {
+  //   res.status(500).json({
+  //     status: "failed",
+  //     message: err,
+  //   });
+  // }
 };
 
 exports.LogIn = async (req, res, next) => {
@@ -53,20 +78,21 @@ exports.LogIn = async (req, res, next) => {
       });
     }
   }
+  CreateSendToken(user, 200, res);
 
-  const token = SignToken(user._id);
+  // const token = SignToken(user._id);
 
-  try {
-    res.status(200).json({
-      status: "success",
-      token,
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: "failed",
-      message: err,
-    });
-  }
+  // try {
+  //   res.status(200).json({
+  //     status: "success",
+  //     token,
+  //   });
+  // } catch (err) {
+  //   res.status(500).json({
+  //     status: "failed",
+  //     message: err,
+  //   });
+  // }
 };
 
 exports.Protect = async (req, res, next) => {
@@ -117,4 +143,102 @@ exports.Protect = async (req, res, next) => {
   // GRANT ACCESS TO PROTECTED ROUT
   req.user = freshUser;
   next();
+};
+
+exports.restricTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        status: "Invalid data sent",
+        message: "you do not have permission to perform this action",
+      });
+    }
+    next();
+  };
+};
+
+// forget pass hase two step:
+
+exports.forgetPassword = async (req, res, next) => {
+  // get user by email
+  const user = await User.findOne({ email: req.body.email });
+
+  if (!user) {
+    return res.status(404).json({
+      status: "Invalid data sent",
+      message: "there is no user with email address",
+    });
+  }
+
+  // generate random verify token
+  const verifyToken = user.ceartePasswordResetToken();
+  await user.save({ validateBeforeSave: false });
+
+  // send the verify token to user email
+  const resetUrl = `${req.protocol}://${req.get(
+    "host"
+  )}/api/v1/user/resetPassword/${verifyToken}`;
+
+  const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: 
+  ${resetUrl}.\nIf you didn't forget your password, please ignore this email!`;
+  console.log(
+    "message",
+    message,
+    "------------",
+    user.email,
+    "----------",
+    verifyToken
+  );
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Your password reset token (valid for 10 min)",
+      message,
+    });
+    console.log("test the try");
+
+    res.status(200).json({
+      status: "success",
+      message: " token sent to email",
+    });
+  } catch (err) {
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    res.status(500).json({
+      status: "Invalid data sent",
+      message: err,
+    });
+  }
+};
+
+exports.resetPassword = async (req, res, nex) => {
+  // get user based on the token
+  const hashedToken = crypto
+    .createHash("sha256")
+    .update(req.params.token)
+    .digest("hex");
+
+  const user =await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return res.status(404).json({
+      status: "Invalid data sent",
+      message: "there is no user with email address",
+    });
+  }
+
+  console.log("user" , req.body)
+  user.password = req.body.password;
+  user.passwordConfrim = req.body.passwordConfrim;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  CreateSendToken(user, 200, res);
 };
