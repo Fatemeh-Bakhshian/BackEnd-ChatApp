@@ -221,7 +221,7 @@ exports.resetPassword = async (req, res, nex) => {
     .update(req.params.token)
     .digest("hex");
 
-  const user =await User.findOne({
+  const user = await User.findOne({
     passwordResetToken: hashedToken,
     passwordResetExpires: { $gt: Date.now() },
   });
@@ -233,7 +233,7 @@ exports.resetPassword = async (req, res, nex) => {
     });
   }
 
-  console.log("user" , req.body)
+  console.log("user", req.body);
   user.password = req.body.password;
   user.passwordConfrim = req.body.passwordConfrim;
   user.passwordResetToken = undefined;
@@ -241,4 +241,23 @@ exports.resetPassword = async (req, res, nex) => {
   await user.save();
 
   CreateSendToken(user, 200, res);
+};
+// ----------
+
+exports.updatePassword = async (req, res, next) => {
+  const user = await User.findById(req.user._id).select("+password");
+
+  if (!user.CorrectPassword(req.body.currentPassword, user.password)) {
+    res.status(401).json({
+      status: "failed",
+      message: "incorrect confrimPassword",
+    });
+  }
+
+  user.password = req.body.password;
+  user.passwordConfrim = req.body.passwordConfrim;
+  await user.save();
+
+  CreateSendToken(user, 200, res);
+
 };
