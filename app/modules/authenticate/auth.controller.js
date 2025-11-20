@@ -34,7 +34,6 @@ exports.signIn = async (req, res, next) => {
   const newuser = await User.create({
     name: req.body.name,
     email: req.body.email,
-    // role: req.body.role,
     phonenumber: req.body.phonenumber,
     password: req.body.password,
     passwordConfrim: req.body.passwordConfrim,

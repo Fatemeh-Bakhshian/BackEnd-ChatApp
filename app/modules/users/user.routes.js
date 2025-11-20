@@ -13,4 +13,10 @@ router.patch(
   controller.updateProfile
 );
 
+router.delete(
+  "/deleteAccount",
+  authController.Protect,
+  controller.deleteAccount
+);
+
 module.exports = router;

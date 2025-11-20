@@ -48,6 +48,12 @@ const userSchema = new mongoose.Schema({
     },
     select: false,
   },
+
+  activate: {
+    type: Boolean,
+    default: true,
+    select: false,
+  },
   passwordChangedAt: Date,
   passwordResetToken: String,
   passwordResetExpires: Date,
@@ -71,13 +77,24 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
+// query middleware :
+
+userSchema.pre(/^find/, function (next) {
+  this.find({ activate: { $ne: false } });
+
+  next();
+});
+
 // INSTANTS METODS:
 
 userSchema.methods.CorrectPassword = async function (
   candidatePassword,
   userPassword
 ) {
-  console.log("first : ", await bcrypt.compare(candidatePassword, userPassword));
+  console.log(
+    "first : ",
+    await bcrypt.compare(candidatePassword, userPassword)
+  );
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 

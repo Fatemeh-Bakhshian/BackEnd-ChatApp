@@ -67,3 +67,19 @@ exports.updateProfile = async (req, res, next) => {
     });
   }
 };
+
+exports.deleteAccount = async (req, res, next) => {
+  await User.findByIdAndUpdate(req.user._id, { activate: false });
+
+  try {
+    res.status(204).json({
+      status: "success",
+      data: null,
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: "failed",
+      data: err,
+    });
+  }
+};
