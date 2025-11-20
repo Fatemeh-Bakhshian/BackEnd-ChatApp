@@ -71,28 +71,14 @@ exports.LogIn = async (req, res, next) => {
 
   const user = await User.findOne({ email }).select("+password");
   if (!user || !(await user.CorrectPassword(password, user.password))) {
-    if (!password || !email) {
-      return res.status(401).json({
-        status: "Invalid data sent",
-        message: " incorrect email or password ",
-      });
-    }
+    return res.status(401).json({
+      status: "Invalid data sent",
+      message: " incorrect email or password ",
+    });
   }
+
   CreateSendToken(user, 200, res);
 
-  // const token = SignToken(user._id);
-
-  // try {
-  //   res.status(200).json({
-  //     status: "success",
-  //     token,
-  //   });
-  // } catch (err) {
-  //   res.status(500).json({
-  //     status: "failed",
-  //     message: err,
-  //   });
-  // }
 };
 
 exports.Protect = async (req, res, next) => {
@@ -259,5 +245,4 @@ exports.updatePassword = async (req, res, next) => {
   await user.save();
 
   CreateSendToken(user, 200, res);
-
 };

@@ -77,6 +77,7 @@ userSchema.methods.CorrectPassword = async function (
   candidatePassword,
   userPassword
 ) {
+  console.log("first : ", await bcrypt.compare(candidatePassword, userPassword));
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
