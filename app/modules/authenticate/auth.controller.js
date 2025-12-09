@@ -4,6 +4,8 @@ const { promisify } = require("util");
 const User = require("../users/user.model");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../../utils/email");
+const catchAsync = require("../../utils/catchAsync");
+const AppErorr = require("../../utils/appError");
 
 const SignToken = (id) => {
   return jwt.sign({ id: id }, process.env.JWT_SECRET, {
@@ -15,13 +17,15 @@ const CreateSendToken = (user, statusCode, res) => {
   console.log("check my TOKEN = ", token);
 
   try {
-    res.status(statusCode).json({
-      status: "success",
-      token,
-      data: {
-        user,
-      },
-    });
+    res
+      .cookie("token", token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax", // یا 'Strict' بسته به نیاز‌ها
+        maxAge: 60 * 60 * 1000,
+      })
+      .status(statusCode)
+      .json({ status: "success", user });
   } catch (err) {
     res.status(500).json({
       status: "failed",
@@ -30,74 +34,48 @@ const CreateSendToken = (user, statusCode, res) => {
   }
 };
 
-exports.signIn = async (req, res, next) => {
+exports.signIn = catchAsync(async (req, res, next) => {
   const newuser = await User.create({
-    name: req.body.name,
     email: req.body.email,
-    phonenumber: req.body.phonenumber,
     password: req.body.password,
     passwordConfrim: req.body.passwordConfrim,
   });
 
   CreateSendToken(newuser, 201, res);
+});
 
-  // const token = SignToken(newuser._id);
-  // try {
-  //   res.status(201).json({
-  //     status: "success",
-  //     token,
-  //     data: {
-  //       user: newuser,
-  //     },
-  //   });
-  // } catch (err) {
-  //   res.status(500).json({
-  //     status: "failed",
-  //     message: err,
-  //   });
-  // }
-};
-
-exports.LogIn = async (req, res, next) => {
+exports.LogIn = catchAsync(async (req, res, next) => {
   const { password, email } = req.body;
 
   if (!password || !email) {
-    return res.status(400).json({
-      status: "Invalid data sent",
-      message: "please provide email and password! ",
-    });
+    return next(new AppErorr("please provide email and password! ", 400));
   }
 
   const user = await User.findOne({ email }).select("+password");
   if (!user || !(await user.CorrectPassword(password, user.password))) {
-    return res.status(401).json({
-      status: "Invalid data sent",
-      message: " incorrect email or password ",
-    });
+    return next(new AppErorr(" incorrect email or password ", 401));
   }
 
   CreateSendToken(user, 200, res);
+});
 
-};
-
-exports.Protect = async (req, res, next) => {
+exports.Protect = catchAsync(async (req, res, next) => {
   // 1) get token and check if its there
 
   // A : get token
   let token;
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    token = req.headers.authorization.split(" ")[1];
+  if (req.headers.cookie && req.headers.cookie.startsWith("token")) {
+    token = req.headers.cookie.split("=")[1];
   }
 
   // B : if its there
   if (!token) {
-    return res.status(401).json({
-      status: "Invalid data sent",
-      message: "pls logIn to get access!",
-    });
+    return next(new AppErorr("pls logIn to get access!", 401));
+
+    // return res.status().json({
+    //   status: "Invalid data sent",
+    //   message: ,
+    // });
   }
 
   // 2) verification token
@@ -109,26 +87,30 @@ exports.Protect = async (req, res, next) => {
   const freshUser = await User.findById(decoded.id);
 
   if (!freshUser) {
-    return res.status(401).json({
-      status: "Invalid data sent",
-      message: "user is not defind",
-    });
+    return next(new AppErorr("user is not defind", 401));
+
+    // return res.status(401).json({
+    //   status: "Invalid data sent",
+    //   message: ,
+    // });
   }
 
   // 4) check if user changed password after the token was issued
 
   if (freshUser.changedPasswordAfter(decoded.iat) == true) {
     console.log("my own test => ", freshUser.changedPasswordAfter(decoded.iat));
-    return res.status(401).json({
-      status: "Invalid data sent",
-      message: "user changed the pass pls logIn again",
-    });
+    return next(new AppErorr("user changed the pass pls logIn again", 401));
+
+    // return res.status(401).json({
+    //   status: "Invalid data sent",
+    //   message: "user changed the pass pls logIn again",
+    // });
   }
 
   // GRANT ACCESS TO PROTECTED ROUT
   req.user = freshUser;
   next();
-};
+});
 
 exports.restricTo = (...roles) => {
   return (req, res, next) => {
@@ -144,15 +126,12 @@ exports.restricTo = (...roles) => {
 
 // forget pass hase two step:
 
-exports.forgetPassword = async (req, res, next) => {
+exports.forgetPassword = catchAsync(async (req, res, next) => {
   // get user by email
   const user = await User.findOne({ email: req.body.email });
 
   if (!user) {
-    return res.status(404).json({
-      status: "Invalid data sent",
-      message: "there is no user with email address",
-    });
+    return next(new AppErorr("there is no user with email address", 404));
   }
 
   // generate random verify token
@@ -192,14 +171,16 @@ exports.forgetPassword = async (req, res, next) => {
     user.passwordResetExpires = undefined;
     await user.save({ validateBeforeSave: false });
 
-    res.status(500).json({
-      status: "Invalid data sent",
-      message: err,
-    });
+    return next(
+      new AppErorr(
+        "There was an error sending the email. Try again later!",
+        500
+      )
+    );
   }
-};
+});
 
-exports.resetPassword = async (req, res, nex) => {
+exports.resetPassword = catchAsync(async (req, res, next) => {
   // get user based on the token
   const hashedToken = crypto
     .createHash("sha256")
@@ -212,10 +193,7 @@ exports.resetPassword = async (req, res, nex) => {
   });
 
   if (!user) {
-    return res.status(404).json({
-      status: "Invalid data sent",
-      message: "there is no user with email address",
-    });
+    return next(new AppErorr("there is no user with email address", 404));
   }
 
   console.log("user", req.body);
@@ -226,17 +204,14 @@ exports.resetPassword = async (req, res, nex) => {
   await user.save();
 
   CreateSendToken(user, 200, res);
-};
+});
 // ----------
 
-exports.updatePassword = async (req, res, next) => {
+exports.updatePassword = catchAsync(async (req, res, next) => {
   const user = await User.findById(req.user._id).select("+password");
 
   if (!user.CorrectPassword(req.body.currentPassword, user.password)) {
-    res.status(401).json({
-      status: "failed",
-      message: "incorrect confrimPassword",
-    });
+    return next(new AppError("incorrect confrimPassword", 401));
   }
 
   user.password = req.body.password;
@@ -244,4 +219,16 @@ exports.updatePassword = async (req, res, next) => {
   await user.save();
 
   CreateSendToken(user, 200, res);
-};
+});
+
+// LogOut
+exports.LogOut = catchAsync(async (req, res, nex) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    // secure: true, // فقط روی HTTPS
+    // sameSite: "Strict", // یا 'Lax' بسته به نیاز‌ها
+    maxAge: 60 * 60 * 1000,
+  });
+
+  res.json({ success: true, message: "Logged out" });
+});

@@ -1,5 +1,7 @@
 const APIFeatures = require("../../utils/apiFeatures");
 const Report = require("./report.model");
+const catchAsync = require("../../utils/catchAsync");
+const AppErorr = require("../../utils/appError");
 
 exports.aliasTopReports = (req, res, next) => {
   req.myQuery = {
@@ -12,60 +14,42 @@ exports.aliasTopReports = (req, res, next) => {
   next();
 };
 
-exports.getReport = async (req, res) => {
-  try {
-    const features = new APIFeatures(
-      Report.find({}),
-      req.myQuery ? req.myQuery : req.query
-    )
-      .filter()
-      .sort()
-      .limitFields()
-      .paginat();
+exports.getReport = catchAsync(async (req, res, next) => {
+  const features = new APIFeatures(
+    Report.find(),
+    req.myQuery ? req.myQuery : req.query
+  )
+    .filter()
+    .sort()
+    .limitFields()
+    .paginat();
 
-    let reports = await features.query;
+  let reports = await features.query;
+  console.log(reports);
 
-    res.status(200).json({
-      status: "success",
-      results: reports.length,
-      data: {
-        reports,
-      },
-    });
-  } catch (err) {
-    //     res.status(404).json({
-    res.status(500).json({
-      status: "failed",
-      //       message: err,
-      message: err.message,
-    });
+  res.status(200).json({
+    status: "success",
+    results: reports.length,
+    data: {
+      reports,
+    },
+  });
+});
+
+exports.getReportById = catchAsync(async (req, res, next) => {
+  const report = await Report.findById(req.params.id);
+
+  //reza added this if part :
+  if (!report) {
+    return next(new AppErorr("Report not found", 404));
   }
-};
 
-exports.getReportById = async (req, res) => {
-  try {
-    const report = await Report.findById(req.params.id);
-
-    //reza added this if part :
-    if (!report) {
-      return res.status(404).json({
-        status: "failed",
-        message: "Report not found",
-      });
-    }
-
-    res.status(200).json({
-      status: "success",
-      data: {
-        report,
-      },
-    });
-  } catch (err) {
-    res.status(400).json({
-      status: "failed",
-      message: err.message,
-    });
-  }
-};
+  res.status(200).json({
+    status: "success",
+    data: {
+      report,
+    },
+  });
+});
 
 //--------------------------------------------------------------------------------------------

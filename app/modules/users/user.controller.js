@@ -1,4 +1,6 @@
 const User = require("./user.model");
+const catchAsync = require("../../utils/catchAsync");
+const AppErorr = require("../../utils/appError");
 
 const fillterFields = (obj, ...allowedFields) => {
   const newObj = {};
@@ -13,32 +15,26 @@ const fillterFields = (obj, ...allowedFields) => {
   return newObj;
 };
 
-exports.getUsers = async (req, res) => {
-  try {
-    const users = await User.find();
+exports.getUsers = catchAsync(async (req, res) => {
+  const users = await User.find();
 
-    res.status(200).json({
-      status: "success",
-      results: users.length,
-      data: {
-        users,
-      },
-    });
-  } catch (err) {
-    res.status(404).json({
-      status: "failed",
-      message: err,
-    });
-  }
-};
+  res.status(200).json({
+    status: "success",
+    results: users.length,
+    data: {
+      users,
+    },
+  });
+});
 
-exports.updateProfile = async (req, res, next) => {
+exports.updateProfile = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfrim) {
-    res.status(400).json({
-      status: "failed",
-      message:
+    return next(
+      new AppErorr(
         "you cant change your password here please use '/updatePassword' ",
-    });
+        400
+      )
+    );
   }
 
   const UpdateFields = fillterFields(
@@ -53,33 +49,19 @@ exports.updateProfile = async (req, res, next) => {
     runValidators: true,
   });
 
-  try {
-    res.status(200).json({
-      status: "success",
-      data: {
-        user: updatedUser,
-      },
-    });
-  } catch (err) {
-    res.status(500).json({
-      statuse: "failed",
-      message: err,
-    });
-  }
-};
+  res.status(200).json({
+    status: "success",
+    data: {
+      user: updatedUser,
+    },
+  });
+});
 
-exports.deleteAccount = async (req, res, next) => {
+exports.deleteAccount = catchAsync(async (req, res, next) => {
   await User.findByIdAndUpdate(req.user._id, { activate: false });
 
-  try {
-    res.status(204).json({
-      status: "success",
-      data: null,
-    });
-  } catch (err) {
-    res.status(500).json({
-      status: "failed",
-      data: err,
-    });
-  }
-};
+  res.status(204).json({
+    status: "success",
+    data: null,
+  });
+});

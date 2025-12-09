@@ -5,6 +5,7 @@ const Router = express.Router();
 
 Router.route("/signIn").post(controller.signIn);
 Router.route("/LogIn").post(controller.LogIn);
+Router.route("/LogOut").post(controller.Protect , controller.LogOut);
 
 Router.route("/forgetPassword").post(controller.forgetPassword);
 Router.route("/resetPassword/:token").patch(controller.resetPassword);

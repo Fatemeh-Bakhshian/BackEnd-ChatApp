@@ -6,15 +6,15 @@ const bcrypt = require("bcryptjs");
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, "please provaide your name"],
+    // required: [true, "please provaide your name"],
     trim: true,
   },
   role: {
     type: String,
     required: [true, "a user must have a role"],
-    enum: ["assistant", "admin", "manager", "employee"],
+    enum: ["Admin", "User"],
     trim: true,
-    default: "assistant",
+    default: "User",
   },
   email: {
     type: String,
@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema({
   },
   phonenumber: {
     type: String,
-    required: [true, "please provaide your phonenumber"],
+    // required: [true, "please provaide your phonenumber"],
     trim: true,
   },
   birthdate: { type: Date },
@@ -74,6 +74,14 @@ userSchema.pre("save", async function (next) {
   if (!this.isModified("password") || this.isNew) return next();
 
   return (this.passwordChangedAt = Date.now - 1000);
+  next();
+});
+
+// set the user name for signIn
+userSchema.pre("save", async function (next) {
+  if (!this.name && this.email) {
+    this.name = this.email.split("@")[0];
+  }
   next();
 });
 
