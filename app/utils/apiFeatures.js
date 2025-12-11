@@ -6,9 +6,9 @@ class APIFeatures {
     this.queryString = queryString;
   }
 
-  filter() {
+  Cfilter() {
     const queryObj = qs.parse(this.queryString);
-    const excludedFields = ["page", "sort", "limit", "fields"];
+    const excludedFields = ["page", "sort", "limit", "fields", "search"];
 
     excludedFields.forEach((el) => delete queryObj[el]);
 
@@ -18,6 +18,18 @@ class APIFeatures {
 
     this.query = this.query.find(JSON.parse(queryStr));
 
+    return this;
+  }
+
+  search() {
+    if (this.queryString.search) {
+      const keyword = this.queryString.search;
+
+      this.query = this.query.find({
+        title: { $regex: keyword, $options: "i" },
+      });
+      console.log("🔍 final mongo filter:", this.query.getFilter());
+    }
     return this;
   }
 

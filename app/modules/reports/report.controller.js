@@ -6,7 +6,7 @@ const AppErorr = require("../../utils/appError");
 exports.aliasTopReports = (req, res, next) => {
   req.myQuery = {
     ...req.query,
-    limit: "2",
+    limit: "3",
     sort: "-date,-like",
     fields: "title,like,date",
   };
@@ -19,7 +19,8 @@ exports.getReport = catchAsync(async (req, res, next) => {
     Report.find(),
     req.myQuery ? req.myQuery : req.query
   )
-    .filter()
+    .Cfilter()
+    .search()
     .sort()
     .limitFields()
     .paginat();
@@ -49,6 +50,44 @@ exports.getReportById = catchAsync(async (req, res, next) => {
     data: {
       report,
     },
+  });
+});
+
+exports.postReport = catchAsync(async (req, res, next) => {
+  const report = await Report.create({
+    title: req.body.title,
+    report: req.body.report,
+
+    writerId: req.user._id,
+    writer: req.user.name,
+    writerrol: req.user.role,
+    writerprofile: req.user.profile ? req.user.profile : null,
+  });
+
+  res.status(201).json({
+    status: "success",
+    data: {
+      report,
+    },
+  });
+});
+
+exports.editeReport = catchAsync(async (req, res, next) => {});
+
+exports.deleteReport = catchAsync(async (req, res, next) => {
+  const report = await Report.findById(req.params.id);
+
+  if (report.writerId.toString() !== req.user._id.toString()) {
+    return next(
+      new AppErorr("this is not your report, you can't delete it.", 403)
+    );
+  }
+
+  await Report.deleteOne({ _id: req.params.id });
+
+  res.status(201).json({
+    status: "success",
+    message: "report deleted.",
   });
 });
 

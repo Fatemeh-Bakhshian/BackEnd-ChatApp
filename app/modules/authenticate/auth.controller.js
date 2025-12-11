@@ -230,5 +230,5 @@ exports.LogOut = catchAsync(async (req, res, nex) => {
     maxAge: 60 * 60 * 1000,
   });
 
-  res.json({ success: true, message: "Logged out" });
+  res.status(201).json({ success: true, message: "Logged out" });
 });

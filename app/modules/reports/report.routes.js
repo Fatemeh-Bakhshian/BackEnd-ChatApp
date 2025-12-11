@@ -7,15 +7,23 @@ const authController = require("../authenticate/auth.controller");
 // const middleware = require("./report.middleware");
 // const Schema = require("./report.model");
 
-router.route("/").get(reportController.getReport);
-
 router
-  .route("/top-2-new")
-  .get(reportController.aliasTopReports, reportController.getReport);
+  .route("/")
+  .get(reportController.getReport)
+  .post(authController.Protect, reportController.postReport);
+
+router.get(
+  "/top-2-new",
+  reportController.aliasTopReports,
+  reportController.getReport
+);
 
 router
   .route("/:id")
-  .get(authController.Protect, reportController.getReportById);
+  .get(authController.Protect, reportController.getReportById)
+  .patch(authController.Protect, reportController.editeReport)
+  .delete(authController.Protect, reportController.deleteReport);
+
 
 //router
 //   .route("/:id")

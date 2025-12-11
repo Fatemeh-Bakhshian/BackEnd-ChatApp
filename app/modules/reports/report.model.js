@@ -13,7 +13,11 @@ const reportSchema = new mongoose.Schema(
       type: String,
       required: [true, "A report should have a report body"],
     },
-
+    writerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "writerId is required"],
+    },
     writer: {
       type: String,
       required: [true, "A report should have a writer"],
@@ -26,14 +30,6 @@ const reportSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-
-    comment: [
-      {
-        user: { type: String, trim: true },
-        text: { type: String, trim: true },
-        date: { type: Date, default: Date.now },
-      },
-    ],
 
     like: { type: Number, default: 0, min: 0 },
   },
@@ -49,5 +45,3 @@ reportSchema.index({ like: -1 });
 reportSchema.index({ title: 1 });
 
 module.exports = Report;
-
-
