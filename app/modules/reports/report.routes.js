@@ -18,6 +18,11 @@ router.get(
   reportController.getReport
 );
 
+router.get(
+  "/:writerId",
+  reportController.getReportByWriterId
+);
+
 router
   .route("/:id")
   .get(authController.Protect, reportController.getReportById)

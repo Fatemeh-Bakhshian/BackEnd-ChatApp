@@ -14,6 +14,19 @@ exports.aliasTopReports = (req, res, next) => {
   next();
 };
 
+const editefildes = (obj, ...allowedFields) => {
+  const newObj = {};
+
+  Object.keys(obj).forEach((el) => {
+    if (allowedFields.includes(el)) {
+      newObj[el] = obj[el];
+    }
+  });
+  console.log("MY NEW OBJ for report => ", newObj);
+
+  return newObj;
+};
+
 exports.getReport = catchAsync(async (req, res, next) => {
   const features = new APIFeatures(
     Report.find(),
@@ -40,13 +53,34 @@ exports.getReport = catchAsync(async (req, res, next) => {
 exports.getReportById = catchAsync(async (req, res, next) => {
   const report = await Report.findById(req.params.id);
 
-  //reza added this if part :
   if (!report) {
     return next(new AppErorr("Report not found", 404));
   }
 
   res.status(200).json({
     status: "success",
+    data: {
+      report,
+    },
+  });
+});
+
+exports.getReportByWriterId = catchAsync(async (req, res, next) => {
+  const report = await Report.find({
+    writerId: req.params.writerId,
+  });
+
+  if (!report) {
+    return next(new AppErorr("Report not found", 404));
+  }
+
+  if (report.length === 0) {
+    return next(new AppErorr("this user hase no report yet", 200));
+  }
+
+  res.status(200).json({
+    status: "success",
+    results: report.length,
     data: {
       report,
     },
@@ -72,7 +106,33 @@ exports.postReport = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.editeReport = catchAsync(async (req, res, next) => {});
+exports.editeReport = catchAsync(async (req, res, next) => {
+  const report = await Report.findById(req.params.id);
+  console.log("report------------------------------------", report);
+  if (report.writerId.toString() !== req.user._id.toString()) {
+    return next(
+      new AppErorr("this is not your report, you can't delete it.", 403)
+    );
+  }
+
+  const newfileds = editefildes(req.body, "title", "report");
+
+  const updatereport = await Report.findByIdAndUpdate(
+    req.params.id,
+    newfileds,
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      report: updatereport,
+    },
+  });
+});
 
 exports.deleteReport = catchAsync(async (req, res, next) => {
   const report = await Report.findById(req.params.id);
@@ -90,5 +150,3 @@ exports.deleteReport = catchAsync(async (req, res, next) => {
     message: "report deleted.",
   });
 });
-
-//--------------------------------------------------------------------------------------------

@@ -8,5 +8,7 @@
 
 // add comment 
 
+    // reportid - writer infor - title - text 
+
 
 // edite comment by writer 
