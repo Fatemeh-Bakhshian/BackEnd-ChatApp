@@ -30,7 +30,7 @@ const editefildes = (obj, ...allowedFields) => {
 exports.getReport = catchAsync(async (req, res, next) => {
   const features = new APIFeatures(
     Report.find(),
-    req.myQuery ? req.myQuery : req.query
+    req.myQuery ? req.myQuery : req.query , 
   )
     .Cfilter()
     .search()

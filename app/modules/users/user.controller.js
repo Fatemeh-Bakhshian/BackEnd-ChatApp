@@ -1,6 +1,7 @@
 const User = require("./user.model");
 const catchAsync = require("../../utils/catchAsync");
 const AppErorr = require("../../utils/appError");
+const APIFeatures = require("../../utils/apiFeatures");
 
 const fillterFields = (obj, ...allowedFields) => {
   const newObj = {};
@@ -16,7 +17,18 @@ const fillterFields = (obj, ...allowedFields) => {
 };
 
 exports.getUsers = catchAsync(async (req, res) => {
-  const users = await User.find();
+  // const users = await User.find();
+
+  const features = new APIFeatures(
+    User.find(),
+    req.myQuery ? req.myQuery : req.query
+  )
+    .Cfilter()
+    .sort()
+    .limitFields()
+    .paginat();
+
+  let users =await features.query;
 
   res.status(200).json({
     status: "success",

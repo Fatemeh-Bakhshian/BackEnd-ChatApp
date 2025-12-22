@@ -53,6 +53,7 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
     select: false,
+    index: true,
   },
   passwordChangedAt: Date,
   passwordResetToken: String,
@@ -64,7 +65,7 @@ const userSchema = new mongoose.Schema({
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
-  this.password = await bcrypt.hash(this.password, 12);
+  this.password = await bcrypt.hash(this.password, 10);
 
   this.passwordConfrim = undefined;
   next();
@@ -73,7 +74,7 @@ userSchema.pre("save", async function (next) {
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password") || this.isNew) return next();
 
-  return (this.passwordChangedAt = Date.now - 1000);
+  return (this.passwordChangedAt = Date.now() - 1000);
   next();
 });
 
@@ -99,10 +100,6 @@ userSchema.methods.CorrectPassword = async function (
   candidatePassword,
   userPassword
 ) {
-  console.log(
-    "first : ",
-    await bcrypt.compare(candidatePassword, userPassword)
-  );
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
