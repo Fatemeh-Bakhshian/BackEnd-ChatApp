@@ -28,7 +28,7 @@ class APIFeatures {
       this.query = this.query.find({
         title: { $regex: keyword, $options: "i" },
       });
-      console.log("🔍 final mongo filter:", this.query.getFilter());
+      // console.log("🔍 final mongo filter:", this.query.getFilter());
     }
     return this;
   }

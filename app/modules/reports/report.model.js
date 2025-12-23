@@ -38,10 +38,10 @@ const reportSchema = new mongoose.Schema(
   }
 );
 
-const Report = mongoose.model("Report", reportSchema);
-
 reportSchema.index({ date: -1 });
 reportSchema.index({ like: -1 });
 reportSchema.index({ title: 1 });
+
+const Report = mongoose.model("Report", reportSchema);
 
 module.exports = Report;

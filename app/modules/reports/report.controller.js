@@ -39,7 +39,7 @@ exports.getReport = catchAsync(async (req, res, next) => {
     .paginat();
 
   let reports = await features.query;
-  console.log(reports);
+  // console.log(reports);
 
   res.status(200).json({
     status: "success",
