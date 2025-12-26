@@ -31,17 +31,14 @@ const commentSchema = new mongoose.Schema(
     },
     writerRole: { type: String, trim: true },
     writerProfile: { type: String, trim: true },
-    date: {
-      type: Date,
-      default: Date.now,
-    },
   },
   {
-    timestamps: true,
+    timestamps: true, // it will Add (CreatAt) and (Update) Add and the update one will change every time that we update a comment
   }
 );
 
-commentSchema.index({ date: -1 });
+commentSchema.index({ createdAt: -1 });
+commentSchema.index({ reportId: -1 });
 commentSchema.index({ title: 1 });
 
 const Comment = mongoose.model("Comment", commentSchema);

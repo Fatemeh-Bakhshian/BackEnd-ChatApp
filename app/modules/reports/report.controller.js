@@ -111,7 +111,7 @@ exports.editeReport = catchAsync(async (req, res, next) => {
   console.log("report------------------------------------", report);
   if (report.writerId.toString() !== req.user._id.toString()) {
     return next(
-      new AppErorr("this is not your report, you can't delete it.", 403)
+      new AppErorr("this is not your report, you can't edite it.", 403)
     );
   }
 
