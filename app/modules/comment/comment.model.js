@@ -31,6 +31,7 @@ const commentSchema = new mongoose.Schema(
     },
     writerRole: { type: String, trim: true },
     writerProfile: { type: String, trim: true },
+    like: { type: Number, default: 0 },
   },
   {
     timestamps: true, // it will Add (CreatAt) and (Update) Add and the update one will change every time that we update a comment

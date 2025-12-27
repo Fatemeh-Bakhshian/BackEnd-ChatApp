@@ -25,13 +25,7 @@ const reportSchema = new mongoose.Schema(
     },
     writerRole: { type: String, trim: true },
     writerProfile: { type: String, trim: true },
-
-    date: {
-      type: Date,
-      default: Date.now,
-    },
-
-    like: { type: Number, default: 0, min: 0 },
+    like: { type: Number, default: 0 },
   },
   {
     timestamps: true,

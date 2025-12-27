@@ -19,7 +19,7 @@ router.get(
 );
 
 router.get(
-  "/:writerId",
+  "writerId/:writerId",
   reportController.getReportByWriterId
 );
 

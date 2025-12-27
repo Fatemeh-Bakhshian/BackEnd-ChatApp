@@ -7,10 +7,12 @@ const rateLimit = require("express-rate-limit");
 
 const globalErrorHandler = require("./app/config/errorController");
 const AppErorr = require("./app/utils/appError");
+
 const userRouter = require("./app/modules/users/user.routes");
 const reportRouter = require("./app/modules/reports/report.routes");
 const authRouter = require("./app/modules/authenticate/auth.routes");
 const commentRouter = require("./app/modules/comment/comment.routes");
+const LikeRouter = require("./app/modules/like/like.routes");
 
 const app = express();
 
@@ -66,6 +68,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/reports", reportRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/comment", commentRouter);
+app.use("/api/v1/like", LikeRouter);
 
 app.all(/.*/, (req, res, next) => {
   next(new AppErorr(`Can't find ${req.originalUrl} on this server!`, 404));
