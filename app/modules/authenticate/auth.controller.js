@@ -14,7 +14,6 @@ const SignToken = (id) => {
 };
 const CreateSendToken = (user, statusCode, res) => {
   const token = SignToken(user._id);
-  console.log("check my TOKEN = ", token);
 
   try {
     res
@@ -22,7 +21,7 @@ const CreateSendToken = (user, statusCode, res) => {
         httpOnly: true,
         secure: false,
         sameSite: "Lax", // یا 'Strict' بسته به نیاز‌ها
-        maxAge: 60 * 60 * 1000,
+        maxAge: 30 * 60 * 1000,
       })
       .status(statusCode)
       .json({ status: "success", user });
@@ -71,16 +70,30 @@ exports.Protect = catchAsync(async (req, res, next) => {
   // B : if its there
   if (!token) {
     return next(new AppErorr("pls logIn to get access!", 401));
-
-    // return res.status().json({
-    //   status: "Invalid data sent",
-    //   message: ,
-    // });
   }
 
   // 2) verification token
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
   console.log("process.env.JWT_SECRET =>", decoded);
+
+  // 2-b) Rolling Expiration
+
+  const now = Math.floor(Date.now() / 1000);
+  const timeLeft = decoded.exp - now; //3600 s 
+  const ROLLING_THRESHOLD = 3600 - (25 * 60); // 25min = 1500 s  --->  3600 - 1500 = 2100
+
+  console.log("env: ", ROLLING_THRESHOLD, "timelft: ", timeLeft);
+  if (timeLeft < ROLLING_THRESHOLD) {
+    console.log("first");
+    const newToken = SignToken(decoded.id);
+
+    res.cookie("token", newToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: 30 * 60 * 1000,
+    });
+  }
 
   // 3) check if user still exists
 
@@ -88,11 +101,6 @@ exports.Protect = catchAsync(async (req, res, next) => {
 
   if (!freshUser) {
     return next(new AppErorr("user is not defind", 401));
-
-    // return res.status(401).json({
-    //   status: "Invalid data sent",
-    //   message: ,
-    // });
   }
 
   // 4) check if user changed password after the token was issued
@@ -100,11 +108,6 @@ exports.Protect = catchAsync(async (req, res, next) => {
   if (freshUser.changedPasswordAfter(decoded.iat) == true) {
     console.log("my own test => ", freshUser.changedPasswordAfter(decoded.iat));
     return next(new AppErorr("user changed the pass pls logIn again", 401));
-
-    // return res.status(401).json({
-    //   status: "Invalid data sent",
-    //   message: "user changed the pass pls logIn again",
-    // });
   }
 
   // GRANT ACCESS TO PROTECTED ROUT
