@@ -13,19 +13,19 @@ router
   .post(authController.Protect, reportController.postReport);
 
 router.get(
-  "/top-2-new",
+  "/top-Reports",
   reportController.aliasTopReports,
   reportController.getReport
 );
 
 router.get(
-  "writerId/:writerId",
+  "/writerId/:writerId",
   reportController.getReportByWriterId
 );
 
 router
   .route("/:id")
-  .get(authController.Protect, reportController.getReportById)
+  .get(reportController.getReportById)
   .patch(authController.Protect, reportController.editeReport)
   .delete(authController.Protect, reportController.deleteReport);
 

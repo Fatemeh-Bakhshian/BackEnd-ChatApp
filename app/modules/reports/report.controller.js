@@ -2,13 +2,14 @@ const APIFeatures = require("../../utils/apiFeatures");
 const Report = require("./report.model");
 const catchAsync = require("../../utils/catchAsync");
 const AppErorr = require("../../utils/appError");
+const Comment = require("../comment/comment.model");
+const Like = require("../like/like.model");
 
 exports.aliasTopReports = (req, res, next) => {
   req.myQuery = {
     ...req.query,
-    limit: "3",
+    limit: "4",
     sort: "-date,-like",
-    fields: "title,like,date",
   };
 
   next();
@@ -30,7 +31,7 @@ const editefildes = (obj, ...allowedFields) => {
 exports.getReport = catchAsync(async (req, res, next) => {
   const features = new APIFeatures(
     Report.find(),
-    req.myQuery ? req.myQuery : req.query , 
+    req.myQuery ? req.myQuery : req.query,
   )
     .Cfilter()
     .search()
@@ -43,7 +44,7 @@ exports.getReport = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    results: reports.length,
+    results: (await Report.find()).length,
     data: {
       reports,
     },
@@ -66,23 +67,23 @@ exports.getReportById = catchAsync(async (req, res, next) => {
 });
 
 exports.getReportByWriterId = catchAsync(async (req, res, next) => {
-  const report = await Report.find({
+  const reports = await Report.find({
     writerId: req.params.writerId,
   });
 
-  if (!report) {
+  if (!reports) {
     return next(new AppErorr("Report not found", 404));
   }
 
-  if (report.length === 0) {
+  if (reports.length === 0) {
     return next(new AppErorr("this user hase no report yet", 200));
   }
 
   res.status(200).json({
     status: "success",
-    results: report.length,
+    results: reports.length,
     data: {
-      report,
+      reports,
     },
   });
 });
@@ -91,11 +92,7 @@ exports.postReport = catchAsync(async (req, res, next) => {
   const report = await Report.create({
     title: req.body.title,
     report: req.body.report,
-
-    writerId: req.user._id,
-    writer: req.user.name,
-    writerrol: req.user.role,
-    writerprofile: req.user.profile ? req.user.profile : null,
+    writer: req.user._id,
   });
 
   res.status(201).json({
@@ -111,7 +108,7 @@ exports.editeReport = catchAsync(async (req, res, next) => {
   console.log("report------------------------------------", report);
   if (report.writerId.toString() !== req.user._id.toString()) {
     return next(
-      new AppErorr("this is not your report, you can't edite it.", 403)
+      new AppErorr("this is not your report, you can't edite it.", 403),
     );
   }
 
@@ -123,7 +120,7 @@ exports.editeReport = catchAsync(async (req, res, next) => {
     {
       new: true,
       runValidators: true,
-    }
+    },
   );
 
   res.status(200).json({
@@ -137,15 +134,33 @@ exports.editeReport = catchAsync(async (req, res, next) => {
 exports.deleteReport = catchAsync(async (req, res, next) => {
   const report = await Report.findById(req.params.id);
 
-  if (report.writerId.toString() !== req.user._id.toString()) {
+  if (!report) {
+    return next(new AppErorr("report not found", 404));
+  }
+
+  if (report.writer._id.toString() !== req.user._id.toString()) {
     return next(
-      new AppErorr("this is not your report, you can't delete it.", 403)
+      new AppErorr("this is not your report, you can't delete it.", 403),
     );
   }
 
+  const reportsComment = await Comment.find({ report: req.params.id }).select(
+    "_id",
+  );
+
+  // for deleting the comments of this report
+  await Like.deleteMany({ targetType: "Report", targetId: req.params.id });
+
+  await Like.deleteMany({
+    targetType: "Comment",
+    targetId: reportsComment.map((c) => c._id),
+  });
+
+  await Comment.deleteMany({ report: req.params.id });
+
   await Report.deleteOne({ _id: req.params.id });
 
-  res.status(201).json({
+  res.status(204).json({
     status: "success",
     message: "report deleted.",
   });

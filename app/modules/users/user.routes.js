@@ -5,7 +5,7 @@ const router = express.Router();
 const controller = require("./user.controller");
 const authController = require("../authenticate/auth.controller");
 
-router.route("/").get(controller.getUsers);
+router.route("/").get( authController.Protect , authController.restricTo("Admin") ,controller.getUsers);
 
 router.patch(
   "/updateProfile",

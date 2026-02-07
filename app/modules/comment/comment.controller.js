@@ -3,6 +3,7 @@ const AppErorr = require("../../utils/appError");
 const catchAsync = require("../../utils/catchAsync");
 const Report = require("../reports/report.model");
 const Comment = require("./comment.model");
+const Like = require("../like/like.model");
 
 const editefildes = (obj, ...allowedFields) => {
   const newObj = {};
@@ -44,8 +45,8 @@ exports.getAllComments = catchAsync(async (req, res, next) => {
 // for a writer
 exports.getUserComments = catchAsync(async (req, res, next) => {
   const featureComments = new APIFeatures(
-    Comment.find({ writerId: req.user._id }),
-    req.query
+    Comment.find({ writer: req.user._id }),
+    req.query,
   )
     .Cfilter()
     .search()
@@ -72,11 +73,12 @@ exports.getReportComments = catchAsync(async (req, res, next) => {
     return next(new AppErorr("Report not found", 404));
   }
   const featureComments = new APIFeatures(
-    Comment.find({ reportId: req.params.reportId }),
-    req.query
+    Comment.find({ report: req.params.reportId }),
+    req.query,
   ).paginat();
 
   let comments = await featureComments.query;
+  console.log("=============>", comments);
 
   res.status(200).json({
     status: "success",
@@ -93,12 +95,8 @@ exports.postComment = catchAsync(async (req, res, next) => {
   const comment = await Comment.create({
     title: req.body.title,
     comment: req.body.comment,
-    reportId: req.params.reportId,
-
-    writerId: req.user._id,
-    writer: req.user.name,
-    writerrol: req.user.role,
-    writerprofile: req.user.profile ? req.user.profile : null,
+    report: req.params.reportId,
+    writer: req.user._id,
   });
 
   if (!req.params.reportId) {
@@ -122,7 +120,7 @@ exports.editeComment = catchAsync(async (req, res, next) => {
   }
   if (comment.writerId.toString() !== req.user._id.toString()) {
     return next(
-      new AppErorr("this is not your comment you can not edite it", 403)
+      new AppErorr("this is not your comment you can not edite it", 403),
     );
   }
 
@@ -133,7 +131,7 @@ exports.editeComment = catchAsync(async (req, res, next) => {
     newfileds,
     {
       new: true,
-    }
+    },
   );
 
   res.status(200).json({
@@ -150,12 +148,14 @@ exports.deleteComment = catchAsync(async (req, res, next) => {
   const comment = await Comment.findById(req.params.id);
 
   if (req.user.role === "Admin") {
+    await Like.deleteMany({ targetType: "Comment", targetId: req.params.id });
     await Comment.deleteOne({ _id: req.params.id });
-  } else if (comment.writerId.toString() !== req.user._id.toString()) {
+  } else if (comment.writer.toString() !== req.user._id.toString()) {
     return next(
-      new AppErorr("this is not your comment, you can't delete it.", 403)
+      new AppErorr("this is not your comment, you can't delete it.", 403),
     );
   } else {
+    await Like.deleteMany({ targetType: "Comment", targetId: req.params.id });
     await Comment.deleteOne({ _id: req.params.id });
   }
 

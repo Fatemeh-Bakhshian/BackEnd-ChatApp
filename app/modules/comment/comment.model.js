@@ -15,28 +15,32 @@ const commentSchema = new mongoose.Schema(
       trim: true,
       min: [10, "title is too short, it should be more than 10 character!"],
     },
-    reportId: {
+    report: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: "Report",
       required: [true, "You need to specify the reportId!"],
     },
-    writerId: {
+    writer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "writerId is required"],
     },
-    writer: {
-      type: String,
-      required: [true, "A report should have a writer"],
-      trim: true,
-    },
-    writerRole: { type: String, trim: true },
-    writerProfile: { type: String, trim: true },
     like: { type: Number, default: 0 },
   },
   {
     timestamps: true, // it will Add (CreatAt) and (Update) Add and the update one will change every time that we update a comment
-  }
+  },
 );
+
+// populating writer
+commentSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "writer",
+    select: "-__v",
+  });
+
+  next();
+});
 
 commentSchema.index({ createdAt: -1 });
 commentSchema.index({ reportId: -1 });
